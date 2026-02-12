@@ -2,7 +2,7 @@ import json
 import decimalencoder
 import todoList
 
-
+#Cambios funcion list
 def list(event, context):
     # fetch all todos from the database
     result = todoList.get_items()

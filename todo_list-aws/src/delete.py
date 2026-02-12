@@ -1,6 +1,6 @@
 import todoList
 
-# Función delete:
+# Función delete: Esta funcion borra
 def delete(event, context):
     todoList.delete_item(event['pathParameters']['id'])
 

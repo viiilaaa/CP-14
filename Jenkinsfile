@@ -105,7 +105,7 @@ pipeline {
 
                             git commit -m "Auto-merge develop to master" || echo "Nada que commitear"
 
-                            git push https://$GIT_USER:$GIT_TOKEN@github.com/viiilaaa/segundo-caso-practico.git master
+                            git push https://$GIT_USER:$GIT_TOKEN@github.com/viiilaaa/CP-14.git master
                         '''
                     }
                 }

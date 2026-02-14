@@ -3,6 +3,7 @@ import decimalencoder
 import todoList
 
 
+# Función para listar
 def list(event, context):
     # fetch all todos from the database
     result = todoList.get_items()

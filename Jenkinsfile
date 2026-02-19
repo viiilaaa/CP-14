@@ -60,19 +60,18 @@ pipeline {
         }
         stage('Rest test') {
             steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    
-                    unstash name:'codigo'
+           
+                unstash name:'codigo'
 
-                    sh '''
-                        BASE_URL=$(aws cloudformation describe-stacks --stack-name todo-list-aws-staging --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text)
-                        echo "BASE_URL: $BASE_URL"
-                        export BASE_URL                        
+                sh '''
+                    BASE_URL=$(aws cloudformation describe-stacks --stack-name todo-list-aws-staging --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --region us-east-1 --output text)
+                    echo "BASE_URL: $BASE_URL"
+                    export BASE_URL                        
 
-                        pytest --junitxml=result-rest.xml todo_list-aws/test/integration/todoApiTest.py
-                        '''
-                    junit 'result-rest.xml'
-                }
+                    pytest --junitxml=result-rest.xml todo_list-aws/test/integration/todoApiTest.py
+                    '''
+                junit 'result-rest.xml'
+
             }
             post { always { cleanWs() } }   
             

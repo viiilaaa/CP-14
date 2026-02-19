@@ -17,6 +17,15 @@ pipeline {
 
                 stash name:'codigo', includes:'**'
                 sh 'ls -la'
+
+                deleteDir() 
+
+                echo 'Descargando configuración en la raíz...'
+                git branch: 'staging', url: 'https://github.com/viiilaaa/todo-list-aws-config.git'
+                
+                sh 'ls -la'
+
+                stash name: 'config-aws', includes: '**'
             }
         }
         stage('Static test') {

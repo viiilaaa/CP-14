@@ -25,7 +25,7 @@ pipeline {
                 
                 sh 'ls -la'
 
-                stash name: 'config-aws', includes: '**'
+                stash name: 'config-aws', includes: 'samconfig.toml'
             }
         }
         stage('Static test') {
@@ -50,6 +50,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 unstash name:'codigo'
+                unstash name:'config-aws'
 
                 sh 'whoami && hostname'
 
@@ -63,8 +64,7 @@ pipeline {
                 sh """
                     sam deploy \
                     --template-file .aws-sam/build/template.yaml \
-                    --config-file ${WORKSPACE}/todo_list-aws/samconfig.toml \
-                    --config-env staging \
+                    --config-file ${WORKSPACE}/samconfig.toml \
                     --resolve-s3 \
                     --no-confirm-changeset \
                     --no-fail-on-empty-changeset

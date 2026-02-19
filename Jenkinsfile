@@ -52,7 +52,7 @@ pipeline {
                         echo "BASE_URL Production: $BASE_URL"
                         export BASE_URL                        
 
-                        pytest -k "get" --junitxml=result-rest.xml todo_list-aws/test/integration/todoApiTest.py
+                        pytest --junitxml=result-rest.xml todo_list-aws/test/integration/todoApiROTest.py
                         '''
                     junit 'result-rest.xml'
                 }

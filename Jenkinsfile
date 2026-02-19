@@ -10,17 +10,27 @@ pipeline {
     stages {
         stage('Get code') {
             steps {
-                echo 'Obteniendo el código fuente de la rama master'
-                
+                echo 'Obtenemos el código fuente'
                 checkout scm
+
                 stash name:'codigo', includes:'**'
                 sh 'ls -la'
+
+                deleteDir() 
+
+                echo 'Descargando configuración en la raíz...'
+                git branch: 'production', url: 'https://github.com/viiilaaa/todo-list-aws-config.git'
+                
+                sh 'ls -la'
+
+                stash name: 'config-aws', includes: 'samconfig.toml'
             }
         }
 
         stage('Deploy') {
             steps {
                 unstash name:'codigo'
+                unstash name:'config-aws'
 
                 echo 'Desplegamos la aplicación en el entorno de PRODUCCIÓN'
                 
@@ -31,8 +41,7 @@ pipeline {
                 sh """
                     sam deploy \
                     --template-file .aws-sam/build/template.yaml \
-                    --config-file ${WORKSPACE}/todo_list-aws/samconfig.toml \
-                    --config-env production \
+                    --config-file ${WORKSPACE}/samconfig.toml \
                     --resolve-s3 \
                     --no-confirm-changeset \
                     --no-fail-on-empty-changeset

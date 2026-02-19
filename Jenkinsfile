@@ -13,8 +13,19 @@ pipeline {
                 echo 'Obtenemos el código fuente'
                 checkout scm
 
+                sh 'whoami && hostname'
+
                 stash name:'codigo', includes:'**'
                 sh 'ls -la'
+
+                deleteDir() 
+
+                echo 'Descargando configuración en la raíz...'
+                git branch: 'staging', url: 'https://github.com/viiilaaa/todo-list-aws-config.git'
+                
+                sh 'ls -la'
+
+                stash name: 'config-aws', includes: 'samconfig.toml'
             }
         }
         stage('Static test') {
@@ -35,6 +46,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 unstash name:'codigo'
+                unstash name:'config-aws'
 
                 echo 'Desplegamos la aplicación'
                 sh 'sam build --template todo_list-aws/template.yaml'
@@ -46,8 +58,7 @@ pipeline {
                 sh """
                     sam deploy \
                     --template-file .aws-sam/build/template.yaml \
-                    --config-file ${WORKSPACE}/todo_list-aws/samconfig.toml \
-                    --config-env staging \
+                    --config-file ${WORKSPACE}/samconfig.toml \
                     --resolve-s3 \
                     --no-confirm-changeset \
                     --no-fail-on-empty-changeset

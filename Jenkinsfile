@@ -13,9 +13,6 @@ pipeline {
                 echo 'Obtenemos el código fuente'
                 checkout scm
 
-                sh 'echo "NOMBRE RAMA: ${BRANCH_NAME}"'
-                sh 'echo "GIT BRANCH: ${GIT_BRANCH}"'
-
                 stash name:'codigo', includes:'**'
                 sh 'ls -la'
             }

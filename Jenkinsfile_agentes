@@ -54,6 +54,7 @@ pipeline {
         }
 
         stage('Rest test') {
+            agent {label 'Agent2'}
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                     

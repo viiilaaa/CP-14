@@ -61,7 +61,7 @@ pipeline {
 
                     sh 'sam build --template todo_list-aws/template.yaml'
                     sh 'sam validate --template todo_list-aws/template.yaml'
-                    
+
                     sh "sam deploy --template-file .aws-sam/build/template.yaml \
                                    --config-file samconfig.toml \
                                    --no-confirm-changeset \
@@ -87,7 +87,7 @@ pipeline {
                     def testFile = (env.BRANCH_NAME == 'master') ? 'todoApiROTest.py' : 'todoApiTest.py'
                     
                     sh """
-                        export $(cat base_url.txt | xargs)
+                        export \$(cat base_url.txt | xargs)
                         echo "La URL recuperada es: $BASE_URL"   
 
                         pytest --junitxml=result-rest.xml todo_list-aws/test/integration/${testFile}

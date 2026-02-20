@@ -22,11 +22,10 @@ pipeline {
                     def configBranch = (env.BRANCH_NAME == 'master') ? 'production' : 'staging'
                     
                     echo "Descargando configuración desde rama: ${configBranch}"
-                    dir('temp_config') {
-                        git branch: configBranch, url: env.CONFIG_REPO
-                    }
-                    sh "mv temp_config/samconfig.toml ."
-                    sh "rm -rf temp_config"
+                    
+                    git branch: configBranch, url: env.CONFIG_REPO
+                    
+                    sh 'ls -la'
                 }
                 
                 stash name: 'config-aws', includes: 'samconfig.toml'
@@ -45,9 +44,76 @@ pipeline {
                         python3 -m flake8 --exit-zero --format=pylint todo_list-aws/src > flake8.out
                         python3 -m bandit -r todo_list-aws -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {severity}: {msg}" || true
                     '''
-                    recordIssues qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true]], 
-                                 tools: [flake8(name: 'Flake8', pattern: 'flake8.out'), 
-                                         pyLint(name: 'Bandit', pattern: 'bandit.out')]
+                    recordIssues qualityGates: [[threshold: 8, type: 'TOTAL', unstable: true]], tools: [flake8(name: 'Flake8', pattern: 'flake8.out'), pyLint(name: 'Bandit', pattern: 'bandit.out')]
+                }
+            }
+            post { always { cleanWs() } }
+        }
+
+        stage('Deploy') {
+            steps {
+                unstash name: 'codigo'
+                unstash name: 'config-aws'
+                
+                script {
+                    def stackName = (env.BRANCH_NAME == 'master') ? 'todo-list-aws-production' : 'todo-list-aws-staging'
+                    echo "Desplegando stack: ${stackName}"
+
+                    sh 'sam build --template todo_list-aws/template.yaml'
+                    sh 'sam validate --template todo_list-aws/template.yaml'
+                    
+                    sh "sam deploy --template-file .aws-sam/build/template.yaml \
+                                   --config-file samconfig.toml \
+                                   --no-confirm-changeset \
+                                   --no-fail-on-empty-changeset"
+
+                    sh """
+                        BASE_URL=\$(aws cloudformation describe-stacks --stack-name ${stackName} --query 'Stacks[0].Outputs[?OutputKey==`BaseUrlApi`].OutputValue' --output text)
+                        echo "BASE_URL=\${BASE_URL}" > base_url.txt
+                    """
+                }
+                stash name: 'api-url', includes: 'base_url.txt'
+            }
+            post { always { cleanWs() } }
+        }
+
+        stage('Rest test') {
+            agent { label 'Agent2' }
+            steps {
+                unstash name: 'codigo'
+                unstash name: 'api-url'
+                script {
+                    // Si es master, usamos los tests Read-Only. Si es develop, los normales.
+                    def testFile = (env.BRANCH_NAME == 'master') ? 'todoApiROTest.py' : 'todoApiTest.py'
+                    
+                    sh """
+                        export $(cat base_url.txt | xargs)
+                        echo "La URL recuperada es: $BASE_URL"   
+
+                        pytest --junitxml=result-rest.xml todo_list-aws/test/integration/${testFile}
+                    """
+                }
+                junit 'result-rest.xml'
+            }
+            post { always { cleanWs() } }
+        }
+
+        stage('Promote') {
+            // Este stage solo se ejecuta en la rama develop (CI) para promocionar a master
+            when { branch 'develop' }
+            steps {
+                checkout scm
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                        sh '''
+                            git fetch origin
+                            git checkout -B master origin/master
+                            git merge --no-commit origin/develop || true
+                            git checkout HEAD -- Jenkinsfile
+                            git commit -m "Auto-merge develop to master" || echo "No changes"
+                            git push https://$GIT_USER:$GIT_TOKEN@github.com/viiilaaa/CP-14.git master
+                        '''
+                    }
                 }
             }
             post { always { cleanWs() } }

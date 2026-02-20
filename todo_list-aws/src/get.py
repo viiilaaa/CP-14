@@ -3,6 +3,7 @@ import decimalencoder
 import todoList
 
 
+# Lambda function to get a TODO item by ID
 def get(event, context):
     # create a response
     item = todoList.get_item(event['pathParameters']['id'])

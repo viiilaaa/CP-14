@@ -61,9 +61,10 @@ pipeline {
 
                     sh 'sam build --template todo_list-aws/template.yaml'
                     sh 'sam validate --template todo_list-aws/template.yaml'
-                    
+
                     sh "sam deploy --template-file .aws-sam/build/template.yaml \
-                                   --config-file samconfig.toml \
+                                   --config-file ${WORKSPACE}/samconfig.toml  \
+                                   --resolve-s3 \
                                    --no-confirm-changeset \
                                    --no-fail-on-empty-changeset"
 
@@ -87,8 +88,8 @@ pipeline {
                     def testFile = (env.BRANCH_NAME == 'master') ? 'todoApiROTest.py' : 'todoApiTest.py'
                     
                     sh """
-                        export $(cat base_url.txt | xargs)
-                        echo "La URL recuperada es: $BASE_URL"   
+                        export \$(cat base_url.txt | xargs)
+                        echo "La URL recuperada es: \$BASE_URL"   
 
                         pytest --junitxml=result-rest.xml todo_list-aws/test/integration/${testFile}
                     """
@@ -102,19 +103,39 @@ pipeline {
             // Este stage solo se ejecuta en la rama develop (CI) para promocionar a master
             when { branch 'develop' }
             steps {
+                
+                sh 'whoami && hostname'
+
                 checkout scm
+
+                sh 'ls -la'
+                
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'github-token',
+                            usernameVariable: 'GIT_USER',
+                            passwordVariable: 'GIT_TOKEN'
+                        )
+                    ]) {
                         sh '''
+
                             git fetch origin
+
                             git checkout -B master origin/master
+
                             git merge --no-commit origin/develop || true
-                            git checkout HEAD -- Jenkinsfile
-                            git commit -m "Auto-merge develop to master" || echo "No changes"
+
+                            git checkout HEAD -- Jenkinsfile Jenkinsfile_agentes
+                            git add Jenkinsfile Jenkinsfile_agentes
+
+                            git commit -m "Auto-merge develop to master" || echo "Nada que commitear"
+
                             git push https://$GIT_USER:$GIT_TOKEN@github.com/viiilaaa/CP-14.git master
                         '''
                     }
                 }
+                
             }
             post { always { cleanWs() } }
         }

@@ -17,6 +17,8 @@ pipeline {
                 checkout scm
                 stash name: 'codigo', includes: '**'
 
+                sh 'whoami && hostname'
+                
                 script {
                     // Si estamos en master, bajamos config de production. Si no, de staging.
                     def configBranch = (env.BRANCH_NAME == 'master') ? 'production' : 'staging'
@@ -39,7 +41,11 @@ pipeline {
             agent { label 'Agent1' }
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
                     unstash name: 'codigo'
+
+                    sh 'whoami && hostname'
+
                     sh '''
                         python3 -m flake8 --exit-zero --format=pylint todo_list-aws/src > flake8.out
                         python3 -m bandit -r todo_list-aws -f custom -o bandit.out --msg-template "{abspath}:{line}: [{test_id}] {severity}: {msg}" || true
@@ -54,6 +60,8 @@ pipeline {
             steps {
                 unstash name: 'codigo'
                 unstash name: 'config-aws'
+
+                sh 'whoami && hostname'
                 
                 script {
                     def stackName = (env.BRANCH_NAME == 'master') ? 'todo-list-aws-production' : 'todo-list-aws-staging'
@@ -83,6 +91,9 @@ pipeline {
             steps {
                 unstash name: 'codigo'
                 unstash name: 'api-url'
+
+                sh 'whoami && hostname'
+
                 script {
                     // Si es master, usamos los tests Read-Only. Si es develop, los normales.
                     def testFile = (env.BRANCH_NAME == 'master') ? 'todoApiROTest.py' : 'todoApiTest.py'
@@ -120,7 +131,7 @@ pipeline {
                     ]) {
                         sh '''
 
-                            git fetch origin
+                            git fetch origin +refs/heads/master:refs/remotes/origin/master
 
                             git checkout -B master origin/master
 

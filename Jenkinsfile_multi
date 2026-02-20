@@ -103,19 +103,39 @@ pipeline {
             // Este stage solo se ejecuta en la rama develop (CI) para promocionar a master
             when { branch 'develop' }
             steps {
+                
+                sh 'whoami && hostname'
+
                 checkout scm
+
+                sh 'ls -la'
+                
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'github-token',
+                            usernameVariable: 'GIT_USER',
+                            passwordVariable: 'GIT_TOKEN'
+                        )
+                    ]) {
                         sh '''
+
                             git fetch origin
+
                             git checkout -B master origin/master
+
                             git merge --no-commit origin/develop || true
-                            git checkout HEAD -- Jenkinsfile
-                            git commit -m "Auto-merge develop to master" || echo "No changes"
+
+                            git checkout HEAD -- Jenkinsfile Jenkinsfile_agentes
+                            git add Jenkinsfile Jenkinsfile_agentes
+
+                            git commit -m "Auto-merge develop to master" || echo "Nada que commitear"
+
                             git push https://$GIT_USER:$GIT_TOKEN@github.com/viiilaaa/CP-14.git master
                         '''
                     }
                 }
+                
             }
             post { always { cleanWs() } }
         }

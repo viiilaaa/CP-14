@@ -63,7 +63,7 @@ pipeline {
                     sh 'sam validate --template todo_list-aws/template.yaml'
 
                     sh "sam deploy --template-file .aws-sam/build/template.yaml \
-                                   --config-file samconfig.toml \
+                                   --config-file ${WORKSPACE}/samconfig.toml  \
                                    --resolve-s3 \
                                    --no-confirm-changeset \
                                    --no-fail-on-empty-changeset"

@@ -107,8 +107,8 @@ pipeline {
 
                             git merge --no-commit origin/develop || true
 
-                            git checkout HEAD -- Jenkinsfile
-                            git add Jenkinsfile
+                            git checkout HEAD -- Jenkinsfile Jenkinsfile_agentes
+                            git add Jenkinsfile Jenkinsfile_agentes
 
                             git commit -m "Auto-merge develop to master" || echo "Nada que commitear"
 
